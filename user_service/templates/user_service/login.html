@@ -1,0 +1,53 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container-fluid v-center">
+  <div class="row justify-content-center">
+    <!-- Adding a row with justify-content-center -->
+    <div class="col-md-6">
+      <!-- Restricting the column size -->
+      <h2 class="text-center">Login Form</h2>
+      <!-- Centering the heading -->
+      <form method="post" class="text-center">
+        {% csrf_token %}
+        <div class="mb-3">
+          {{ form.username }}
+          <!-- Assuming you have a username field -->
+        </div>
+        <div class="mb-3">
+          {{ form.password }}
+          <!-- Assuming you have a password field -->
+        </div>
+        <button type="submit" class="btn btn-primary">Login</button>
+        <a href="{% url 'signup' %}" class="btn btn-secondary">Signup</a>
+        <br />
+        <a href="{% url 'password_reset' %}">Forgot Password?</a>
+      </form>
+    </div>
+  </div>
+  <br />
+  <br />
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      {% load socialaccount %}
+      <h2 class="text-center">Google Login</h2>
+      <div class="text-center">
+        <a
+          href="{% provider_login_url 'google' %}?next=/home"
+          class="btn btn-primary"
+          >Login with Google</a
+        >
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .v-center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 80vh;
+  }
+</style>
+
+{% endblock %}

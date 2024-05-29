@@ -1,0 +1,88 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container my-5">
+  <h1 class="display-4 text-center mb-4">Alert Dashboard</h1>
+  <h5 class="mb-3 text-center">
+    Current Alert Status: {% if alert_active %} Active
+    <i class="fas fa-check"></i> {% else %} Inactive
+    <i class="fas fa-solid fa-times"></i> {% endif %}
+  </h5>
+  <br />
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+      {% for stock, areas_of_interest in stocks_interests.items %}
+      <div class="card mb-3 stock-card" id="stock-card-{{ stock.id }}">
+        <div class="card-body">
+          <div
+            role="button"
+            class="card-title stock-selector"
+            onclick="toggleButtons('{{ stock.id }}')"
+          >
+            <strong>{{ stock.stock.name }} ({{stock.stock.ticker}})</strong>
+          </div>
+          <div
+            class="card-text button-group"
+            id="buttons-{{ stock.id }}"
+            style="display: none"
+          >
+            <p>{{areas_of_interest}}</p>
+            <br />
+
+            <a
+              href="{% url 'configure-alerts' stock.id %}"
+              class="btn btn-outline-primary button-spacing"
+              >Configure</a
+            >
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <br />
+</div>
+
+<style>
+  .stock-card {
+    transition: background-color 0.3s ease;
+  }
+  .stock-selected {
+    background-color: #e9ecef; /* This is a light grey color; change as needed */
+  }
+  .stock-selector {
+    cursor: pointer;
+    user-select: none;
+  }
+  .button-group {
+    padding-top: 10px;
+  }
+  .button-spacing {
+    margin-right: 15px; /* Adjust the spacing here */
+  }
+</style>
+
+<script>
+  function toggleButtons(stockId) {
+    var buttons = document.getElementById("buttons-" + stockId);
+    var stockCard = document.getElementById("stock-card-" + stockId);
+    var isVisible = buttons.style.display === "none";
+    // Hide all button groups and remove the selection color from all cards
+    var allButtonGroups = document.querySelectorAll(".button-group");
+    var allStockCards = document.querySelectorAll(".stock-card");
+    allButtonGroups.forEach(function (group) {
+      group.style.display = "none";
+    });
+    allStockCards.forEach(function (card) {
+      card.classList.remove("stock-selected");
+    });
+    // Toggle the current card's buttons and selection color
+    if (isVisible) {
+      buttons.style.display = "block";
+      stockCard.classList.add("stock-selected");
+    } else {
+      buttons.style.display = "none";
+    }
+  }
+</script>
+
+{% endblock %}

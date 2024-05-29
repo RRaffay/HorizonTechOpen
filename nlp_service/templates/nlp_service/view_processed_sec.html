@@ -1,0 +1,47 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-12">
+      <a href="{% url 'home' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+      </a>
+    </div>
+  </div>
+  <h1 class="display-4 text-center mb-4">Processed SEC Data</h1>
+
+  <div class="table-responsive mb-5">
+    <table class="table">
+      <thead class="thead-light">
+        <tr>
+          <th>Filing</th>
+          <th>Generated At</th>
+          <th>Ticker</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{ processed_sec_filing.filing }}</td>
+          <td>{{ processed_sec_filing.generated_at }}</td>
+          <td>{{ processed_sec_filing.ticker }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="processed-data">
+    {% for category, details in processed_sec_filing.processed_data.items %}
+    <div class="card mb-3">
+      <div class="card-header" style="background-color: #2c3e50; color: white">
+        <h3 class="card-title">{{ category }}</h3>
+      </div>
+      <div class="card-body">
+        <p class="card-text"><strong>Question:</strong> {{ details.query }}</p>
+        <p class="card-text"><strong>Result:</strong> {{ details.result }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}

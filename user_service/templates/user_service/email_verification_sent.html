@@ -1,0 +1,25 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container-fluid v-center">
+  <div class="row justify-content-center">
+    <!-- Adding a row with justify-content-center -->
+    <div class="col-md-6">
+      <!-- Restricting the column size -->
+      <h5 class="text-center">
+        Please check your email to confirm your email address.
+      </h5>
+      <!-- Centering the heading -->
+    </div>
+  </div>
+</div>
+
+<style>
+  .v-center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 80vh;
+  }
+</style>
+
+{% endblock %}

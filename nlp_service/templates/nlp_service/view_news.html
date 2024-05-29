@@ -1,0 +1,468 @@
+{% extends "base.html" %} {% block content %}
+<link
+  href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+  rel="stylesheet"
+/>
+
+<!-- Loading Screen HTML -->
+<div id="form-loading-screen" style="display: none">
+  <div class="spinner-screen"></div>
+</div>
+
+<div class="container py-4">
+  <div class="row">
+    <div class="col-12">
+      <a href="{% url 'home' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+      </a>
+    </div>
+  </div>
+  <h1 class="text-center font-weight-bold mb-4">{{ ticker }} News</h1>
+  <div class="mb-3">
+    <h3 class="text-center font-weight-bold">
+      Area of interest: {{ user_info }}
+    </h3>
+    <h4 class="h4 text-center font-weight-bold">
+      Events for Range: {{ events_range }}
+    </h4>
+    <button
+      class="btn btn-primary mb-2"
+      data-bs-toggle="collapse"
+      data-bs-target="#updateInfoForm"
+      style="background-color: #2c3e50; border: none"
+    >
+      Update Area of interest
+    </button>
+    <div class="collapse" id="updateInfoForm">
+      <div class="card card-body">
+        <form method="POST" action="{% url 'change_stock_info' %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <input
+              type="text"
+              class="form-control"
+              id="info"
+              name="info"
+              value="{{ user_info }}"
+              required
+            />
+            <small id="upgradeInfoHelp" class="form-text text-muted"
+              >Try to be as precise as possible for best results</small
+            >
+          </div>
+          <input type="hidden" name="ticker" value="{{ ticker }}" />
+          <button type="submit" class="btn btn-success">Update</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <button
+      class="btn btn-primary mb-2"
+      data-bs-toggle="collapse"
+      data-bs-target="#configureForm"
+      style="background-color: #2c3e50; border: none"
+    >
+      Configure
+    </button>
+    <div class="collapse" id="configureForm">
+      <div class="card card-body mb-3">
+        <form method="POST" action="{% url 'view_news' ticker %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="numEvents" class="form-label"
+              >Number of Events to Analyze:</label
+            >
+            <input
+              type="number"
+              class="form-control"
+              id="numEvents"
+              name="numEvents"
+              min="1"
+              max="100"
+              value="5"
+              required
+            />
+            <small id="numEventsHelp" class="form-text text-muted"
+              >Increasing this value may provide finer detail but will also
+              increase processing time and noise.</small
+            >
+          </div>
+          <input type="hidden" name="ticker" value="{{ ticker }}" />
+          <button type="submit" class="btn btn-success">Update</button>
+        </form>
+      </div>
+
+      <div class="card card-body">
+        <form method="POST" action="{% url 'view_news' ticker %}">
+          {% csrf_token %}
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="startDate" class="form-label">Start Date:</label>
+              <input
+                type="date"
+                class="form-control"
+                id="startDate"
+                name="startDate"
+                required
+              />
+              <small id="numEventsHelp" class="form-text text-muted"
+                >This is the start date for the events to be considered.</small
+              >
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="endDate" class="form-label">End Date:</label>
+              <input
+                type="date"
+                class="form-control"
+                id="endDate"
+                name="endDate"
+                required
+              />
+              <small id="numEventsHelp" class="form-text text-muted"
+                >This is the end date for the events to be considered.</small
+              >
+            </div>
+          </div>
+          <input type="hidden" name="ticker" value="{{ ticker }}" />
+          <button type="submit" class="btn btn-success">Update</button>
+        </form>
+      </div>
+    </div>
+    <br />
+    <br />
+
+    <div class="row">
+      <!-- Analysis div -->
+      <div class="col-md-6">
+        <div class="mb-5">
+          <h3 class="h3 mt-3">Analysis</h3>
+          <div id="analysisContent" class="collapse show">
+            <p>{{ llm_ranking|linebreaksbr }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat-bot div -->
+      <div class="col-md-6">
+        <div class="mb-5">
+          <h3 class="h3 mt-3">Chat with News</h3>
+          <br />
+          <div class="chat-container">
+            <div id="loading" class="loading" style="display: none">
+              <!-- This can be any loading spinner you choose -->
+              <div class="spinner"></div>
+            </div>
+            <div id="chatbox" class="chatbox">
+              <!-- Chat messages will appear here in bubbles -->
+            </div>
+
+            <div class="input-group">
+              <input
+                type="text"
+                id="question"
+                class="input-field"
+                placeholder="Type your question here"
+                aria-label="Question"
+              />
+              <button class="send-button" onclick="sendQuestionNews()">
+                Ask
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="h4 font-weight-bold mb-3">News:</h2>
+        <div class="accordion" id="articlesAccordion">
+          {% for processed_data in processed_data_list %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+              <button
+                class="accordion-button collapsed"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapse{{ forloop.counter }}"
+                aria-expanded="false"
+                aria-controls="collapse{{ forloop.counter }}"
+              >
+                Event #{{ forloop.counter }} - {{ processed_data.summary }}
+              </button>
+            </h2>
+            <div
+              id="collapse{{ forloop.counter }}"
+              class="accordion-collapse collapse"
+              aria-labelledby="heading{{ forloop.counter }}"
+              data-bs-parent="#articlesAccordion"
+            >
+              <div class="accordion-body bg-dark text-white p-4">
+                <!-- Displaying links -->
+                {% for link in processed_data.links %}
+                <a href="{{ link }}" target="_blank"
+                  >Link {{ forloop.counter }}</a
+                ><br />
+                {% endfor %}
+                <!-- Displaying event health -->
+                <strong>Event Health:</strong>
+                <ul>
+                  <li>Size Score: {{ processed_data.event_health.0 }}</li>
+                  <li>
+                    Cohesiveness Score: {{ processed_data.event_health.1 }}
+                  </li>
+                  <li>Time Variance: {{ processed_data.event_health.2 }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <style>
+      body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+      }
+
+      .chat-container {
+        max-width: 80%;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      .chatbox {
+        height: 600px;
+        overflow-y: auto;
+        margin-bottom: 20px;
+        padding: 10px;
+        background: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      .input-group {
+        display: flex;
+      }
+
+      .input-field {
+        flex-grow: 1;
+        padding: 10px;
+        margin-right: 5px;
+        border: 1px solid #ccc;
+        border-radius: 20px;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .send-button {
+        padding: 10px 20px;
+        background: #5cb85c;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      .send-button:hover {
+        background: #4cae4c;
+      }
+
+      .chat-bubble {
+        padding: 10px 20px;
+        margin: 10px;
+        border-radius: 20px;
+        display: block;
+        max-width: 80%;
+      }
+
+      .user {
+        background: #007bff;
+        color: white;
+        text-align: left;
+        float: right;
+        clear: both;
+      }
+
+      .bot {
+        background: #e8e8e8;
+        text-align: left;
+        float: left;
+        clear: both;
+      }
+
+      .spinner {
+        border: 2px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top: 2px solid #555;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+        margin: 10px auto; /* Centers the spinner in the bubble */
+      }
+
+      .spinner-screen {
+        border: 10px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top: 5px solid #555;
+        width: 100px;
+        height: 100px;
+        animation: spin 1s linear infinite;
+        margin: 10px auto; /* Centers the spinner in the bubble */
+      }
+
+      #form-loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000; /* Ensure it's above everything else */
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+
+    <script>
+      // Function to get the CSRF token
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+          const cookies = document.cookie.split(";");
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === name + "=") {
+              cookieValue = decodeURIComponent(
+                cookie.substring(name.length + 1)
+              );
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+
+      // Get the CSRF token
+      const csrftoken = getCookie("csrftoken");
+
+      let chatHistory = []; // Initialize an empty array to store chat history
+
+      document
+        .getElementById("startDate")
+        .addEventListener("change", validateDates);
+      document
+        .getElementById("endDate")
+        .addEventListener("change", validateDates);
+
+      // JavaScript to handle form submission
+      document.addEventListener("DOMContentLoaded", function () {
+        var forms = document.getElementsByTagName("form");
+        for (var i = 0; i < forms.length; i++) {
+          forms[i].addEventListener("submit", function () {
+            document.getElementById("form-loading-screen").style.display =
+              "flex";
+          });
+        }
+      });
+
+      function validateDates() {
+        var startDate = document.getElementById("startDate").value;
+        var endDate = document.getElementById("endDate").value;
+
+        var minDate = new Date("{{ min_date }}");
+        var maxDate = new Date("{{ max_date }}");
+
+        if (startDate && new Date(startDate) < minDate) {
+          alert(
+            "Start date should be after " + minDate.toISOString().split("T")[0]
+          );
+          document.getElementById("startDate").value = "";
+        } else if (endDate && new Date(endDate) > maxDate) {
+          alert(
+            "End date should be before " + maxDate.toISOString().split("T")[0]
+          );
+          document.getElementById("endDate").value = "";
+        } else if (
+          startDate &&
+          endDate &&
+          new Date(startDate) > new Date(endDate)
+        ) {
+          alert("End date should be after start date");
+          document.getElementById("endDate").value = "";
+        }
+      }
+
+      function sendQuestionNews() {
+        const questionInput = document.getElementById("question");
+        const chatbox = document.getElementById("chatbox");
+        const questionValue = questionInput.value;
+
+        // Append user's question to the chatbox as a chat bubble
+        chatbox.innerHTML +=
+          "<div class='chat-bubble user'>" + questionInput.value + "</div>";
+
+        // Add a temporary bubble with a loading spinner for the bot's response
+        const loadingBubble = document.createElement("div");
+        loadingBubble.className = "chat-bubble bot";
+        loadingBubble.innerHTML = "<div class='spinner'></div>";
+        chatbox.appendChild(loadingBubble);
+
+        chatbox.scrollTop = chatbox.scrollHeight;
+
+        // Data to be sent
+        const data = {
+          analysis: `{{ llm_ranking|safe }}`,
+          question: questionInput.value,
+          chat_history: chatHistory, // Send the chat history
+          analysis_context: `{{ user_info }}`,
+        };
+        // AJAX request to backend
+        fetch("/get_news_answer", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrftoken /* Required for CSRF protection */,
+          },
+          body: JSON.stringify(data),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            // Append bot's response to the chatbox as a chat bubble
+            loadingBubble.innerHTML = data.answer;
+
+            // Update chat history
+            console.log(questionValue); // Use the stored value
+            chatHistory.push([questionValue, data.answer]); // Use the stored value
+          })
+          .catch((error) => {
+            // Handle errors, e.g., by showing an error message in the bot's bubble
+            loadingBubble.innerHTML =
+              "Sorry, I can't fetch the response right now.";
+          });
+
+        // Clear the question input
+        questionInput.value = "";
+      }
+
+      window.onload = function () {
+        document.getElementById("form-loading-screen").style.display = "none";
+      };
+    </script>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,170 @@
+{% extends "base.html" %} {% block content %}
+<br />
+<div class="container">
+  <div class="row">
+    <div class="col-2">
+      <a href="{% url 'home' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+      </a>
+    </div>
+    <div class="col-8 text-center">
+      <h2>Chat with {{ticker}}'s {{filing_type}}</h2>
+    </div>
+  </div>
+</div>
+
+<br />
+<div class="chat-container">
+  <div id="chatbox" class="chatbox">
+    <!-- Chat messages will appear here in bubbles -->
+  </div>
+
+  <div class="input-group">
+    <input
+      type="text"
+      id="question"
+      class="input-field"
+      placeholder="Type your question here"
+      aria-label="Question"
+    />
+    <button class="send-button" onclick="sendQuestion()">Ask</button>
+  </div>
+</div>
+
+<script>
+  // Function to get the CSRF token
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === name + "=") {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  // Get the CSRF token
+  const csrftoken = getCookie("csrftoken");
+  let chatHistory = []; // Initialize an empty array to store chat history
+
+  function sendQuestion() {
+    const questionInput = document.getElementById("question");
+    const chatbox = document.getElementById("chatbox");
+
+    // Append user's question to the chatbox as a chat bubble
+    chatbox.innerHTML +=
+      "<div class='chat-bubble user'>" + questionInput.value + "</div>";
+
+    // Data to be sent
+    const data = {
+      ticker: "{{ ticker }}",
+      filing_type: "{{ filing_type }}",
+      question: questionInput.value,
+      chat_history: chatHistory, // Send the chat history
+    };
+
+    // AJAX request to backend
+    fetch("/get_answer", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrftoken /* Required for CSRF protection */,
+      },
+      body: JSON.stringify(data),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        // Append bot's response to the chatbox as a chat bubble
+        chatbox.innerHTML +=
+          "<div class='chat-bubble bot'>" + data.answer + "</div>";
+
+        // Update chat history
+        chatHistory.push([questionInput.value, data.answer]);
+      });
+
+    // Clear the question input
+    questionInput.value = "";
+  }
+</script>
+
+<style>
+  body {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .chat-container {
+    max-width: 600px;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+
+  .chatbox {
+    height: 400px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  .input-group {
+    display: flex;
+  }
+
+  .input-field {
+    flex-grow: 1;
+    padding: 10px;
+    margin-right: 5px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .send-button {
+    padding: 10px 20px;
+    background: #5cb85c;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .send-button:hover {
+    background: #4cae4c;
+  }
+
+  .chat-bubble {
+    padding: 10px 20px;
+    margin: 10px;
+    border-radius: 20px;
+    display: block;
+    max-width: 80%;
+  }
+
+  .user {
+    background: #007bff;
+    color: white;
+    text-align: left;
+    float: right;
+    clear: both;
+  }
+
+  .bot {
+    background: #e8e8e8;
+    text-align: left;
+    float: left;
+    clear: both;
+  }
+</style>
+
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container my-5">
+  <h1 class="display-4 text-center mb-4">
+    Welcome, {{ user.first_name|default:user.username }}!
+  </h1>
+  <h2 class="text-center mb-3">Your Portfolio:</h2>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+      {% for stock in portfolio.stocks.all %}
+      <div class="card mb-3 stock-card" id="stock-card-{{ stock.id }}">
+        <div class="card-body">
+          <div
+            role="button"
+            class="card-title stock-selector"
+            onclick="toggleButtons('{{ stock.id }}')"
+          >
+            {{ stock.name }} ({{ stock.ticker }})
+          </div>
+          <div
+            class="card-text button-group"
+            id="buttons-{{ stock.id }}"
+            style="display: none"
+          >
+            <a
+              href="{% url 'remove_stock' stock.id %}"
+              class="btn btn-outline-danger button-spacing"
+              >Remove</a
+            >
+            <a
+              href="{% url 'chat_with_docs' stock.ticker '10-K' %}"
+              class="btn btn-outline-primary button-spacing"
+              >Chat with 10-K Document</a
+            >
+            <!-- <a
+              href="{% url 'view_processed_sec_filing' stock.ticker %}"
+              class="btn btn-outline-info button-spacing"
+              >View Processed SEC Filing</a
+            > -->
+            <a
+              href="{% url 'view_news' stock.ticker %}"
+              class="btn btn-outline-secondary"
+              >View News</a
+            >
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <br />
+  <div class="text-center mt-3">
+    <a href="{% url 'add_stock' %}" class="btn btn-lg btn-primary"
+      >Add a new stock to your portfolio</a
+    >
+  </div>
+
+  <div class="text-center mt-3">
+    <a href="{% url 'alert_dashboard' %}" class="btn btn-lg btn-primary"
+      >Alerts</a
+    >
+  </div>
+</div>
+
+<style>
+  .stock-card {
+    transition: background-color 0.3s ease;
+  }
+  .stock-selected {
+    background-color: #e9ecef; /* This is a light grey color; change as needed */
+  }
+  .stock-selector {
+    cursor: pointer;
+    user-select: none;
+  }
+  .button-group {
+    padding-top: 10px;
+  }
+  .button-spacing {
+    margin-right: 15px; /* Adjust the spacing here */
+  }
+</style>
+
+<script>
+  function toggleButtons(stockId) {
+    var buttons = document.getElementById("buttons-" + stockId);
+    var stockCard = document.getElementById("stock-card-" + stockId);
+    var isVisible = buttons.style.display === "none";
+    // Hide all button groups and remove the selection color from all cards
+    var allButtonGroups = document.querySelectorAll(".button-group");
+    var allStockCards = document.querySelectorAll(".stock-card");
+    allButtonGroups.forEach(function (group) {
+      group.style.display = "none";
+    });
+    allStockCards.forEach(function (card) {
+      card.classList.remove("stock-selected");
+    });
+    // Toggle the current card's buttons and selection color
+    if (isVisible) {
+      buttons.style.display = "block";
+      stockCard.classList.add("stock-selected");
+    } else {
+      buttons.style.display = "none";
+    }
+  }
+</script>
+
+{% endblock %}

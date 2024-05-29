@@ -1,0 +1,49 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+  <!-- Go Back Button with Left Arrow Icon -->
+  <div class="row">
+    <div class="col-12">
+      <a href="{% url 'home' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+      </a>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <h3 class="mb-3">Add a stock to your portfolio:</h3>
+      <form
+        method="post"
+        action="{% url 'add_stock' %}"
+        class="needs-validation"
+        novalidate
+      >
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="stock_id" class="form-label">Select Stock:</label>
+          <select name="stock_id" id="stock_id" class="form-select">
+            {% for stock in stocks %}
+            <option value="{{ stock.id }}">
+              {{ stock.name }} ({{ stock.ticker }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="info" class="form-label">Additional Information:</label>
+          <input
+            type="text"
+            id="area_of_interest"
+            name="area_of_interest"
+            class="form-control"
+            required
+          />
+          <div class="invalid-feedback">
+            Please provide additional information.
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Stock</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
